@@ -7,13 +7,13 @@ http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/m
     <apikit:config name="super-movies-sapi-config" api="resource::b54a87e3-bdb2-48a8-bf90-1a545fb3522c:super-movies-sapi:1.0.0:raml:zip:super-movies-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
     <api-gateway:autodiscovery apiId="20435907" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2e8d93f0-f1b2-448f-a57e-68d0df4b14d4" flowRef="super-movies-sapi-main" />
 	<flow name="super-movies-sapi-main">
-        <http:listener config-ref="super-movies-sapi-httpListenerConfig" path="/api/*">
+        <http:listener config-ref="super-movies-sapi-httpListenerConfig" path="/api/v1/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:response>
             <http:error-response statusCode="#[vars.httpStatus default 500]">
-                <http:body>#[payload]</http:body>
-                <http:headers>#[vars.outboundHeaders default {}]</http:headers>
+                <http:body><![CDATA[#[payload]]]></http:body>
+                <http:headers><![CDATA[#[vars.outboundHeaders default {}]]]></http:headers>
             </http:error-response>
         </http:listener>
         <apikit:router config-ref="super-movies-sapi-config" />
