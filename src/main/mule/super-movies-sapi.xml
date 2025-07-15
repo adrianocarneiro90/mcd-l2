@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<mule xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd ">
+<mule xmlns:api-gateway="http://www.mulesoft.org/schema/mule/api-gateway" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:apikit="http://www.mulesoft.org/schema/mule/mule-apikit" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core" xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd http://www.mulesoft.org/schema/mule/mule-apikit http://www.mulesoft.org/schema/mule/mule-apikit/current/mule-apikit.xsd http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd 
+http://www.mulesoft.org/schema/mule/api-gateway http://www.mulesoft.org/schema/mule/api-gateway/current/mule-api-gateway.xsd">
     <http:listener-config name="super-movies-sapi-httpListenerConfig">
         <http:listener-connection host="0.0.0.0" port="8081" />
     </http:listener-config>
     <apikit:config name="super-movies-sapi-config" api="resource::b54a87e3-bdb2-48a8-bf90-1a545fb3522c:super-movies-sapi:1.0.0:raml:zip:super-movies-sapi.raml" outboundHeadersMapName="outboundHeaders" httpStatusVarName="httpStatus" />
-    <flow name="super-movies-sapi-main">
+    <api-gateway:autodiscovery apiId="20435907" ignoreBasePath="true" doc:name="API Autodiscovery" doc:id="2e8d93f0-f1b2-448f-a57e-68d0df4b14d4" flowRef="super-movies-sapi-main" />
+	<flow name="super-movies-sapi-main">
         <http:listener config-ref="super-movies-sapi-httpListenerConfig" path="/api/*">
             <http:response statusCode="#[vars.httpStatus default 200]">
                 <http:headers>#[vars.outboundHeaders default {}]</http:headers>
@@ -124,31 +126,24 @@ output application/json
         </error-handler>
     </flow>
     <flow name="get:\movies\(id):super-movies-sapi-config">
-        <ee:transform doc:name="Transform Message">
-            <ee:variables>
-                <ee:set-variable variableName="id">attributes.uriParams.'id'</ee:set-variable>
-            </ee:variables>
-        </ee:transform>
-        <ee:transform doc:name="Transform Message">
-            <ee:message>
-                <ee:set-payload><![CDATA[%dw 2.0
-output application/json
+		<logger level="INFO" doc:name="Logger" doc:id="f8e59352-a4ff-419e-abe3-b18238f24b5c" message="#['\n********************************************\n' ++ 'Flow started with correlation id - ' ++ correlationId ++  '\n********************************************\n']" />
+		<ee:transform doc:name="Transform Message" doc:id="143bc9bc-9cf4-4ae1-b36f-ce503c085149" >
+			<ee:variables >
+				<ee:set-variable variableName="id" ><![CDATA[attributes.uriParams.'id'
+				]]></ee:set-variable>
+			</ee:variables>
+		</ee:transform>
+		<http:request method="GET" doc:name="Request" doc:id="25ce907b-69ac-4a2a-9801-cbe1d2749084" url="https://super-movies-data-default-rtdb.asia-southeast1.firebasedatabase.app/movies/{MID}.json" >
+			<http:uri-params ><![CDATA[#[output application/java
 ---
 {
-  character: "BatMan",
-  id: "DC0001",
-  movies: [
-    {
-      name: "Zack Snyder's Justice League",
-      year: 2021
-    }, 
-    {
-      name: "Batman v Superman: Dawn of Justice",
-      year: 2016
-    }
-  ]
-} as Object {encoding: "UTF-8", mediaType: "application/json"}]]></ee:set-payload>
-            </ee:message>
-        </ee:transform>
+	"MID" : vars.id
+}]]]></http:uri-params>
+		</http:request>
+		<logger level="INFO" doc:name="Logger" doc:id="4b06a6ba-46c9-4d47-bd65-07b250d32dd6" message="#['\n********************************************\n' ++ 'Flow End' ++  '\n********************************************\n']" />
     </flow>
+	<flow name="api-liveness-flow" doc:id="4c9c4f42-844c-4dab-b9d8-3ad92551b84a" >
+		<http:listener doc:name="Listener" doc:id="722b5cba-0eb3-4206-a880-02af3d98add2" config-ref="super-movies-sapi-httpListenerConfig" path="/live"/>
+		<set-payload value="LIVE" doc:name="LIVE" doc:id="5b2ff385-de0f-4092-b16e-a830dd3db269" />
+	</flow>
 </mule>
